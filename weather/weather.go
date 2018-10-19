@@ -222,7 +222,7 @@ func (c *Weather) ShowCityWeather(province, district, city string) (Resp *Weathe
 	if has {
 		log.Printf("last update time：%s  %s\n", resp.FullName_, resp.getime_.Format(time.RFC3339))
 	}
-	return c.get7DaysWeatherInfoByCity(cityinfo, has)
+	return c.get7DaysWeatherInfoByCity(cityinfo, !has)
 }
 
 func timeCheck(dataTime time.Time) (ok bool) {
