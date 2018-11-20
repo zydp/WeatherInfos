@@ -8,16 +8,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
-
-// /*
-// #include <unistd.h>
-// */
-// import "C"
 
 const (
 	LOG_FILE   = "./logs/weather.log"
@@ -26,10 +25,13 @@ const (
 )
 
 var (
-	port    = flag.Int("port", 3244, "The TCP port that the server listens on")
-	address = flag.String("address", "", "The net address that the server listens")
-	handle  *weather.Weather
-	once    sync.Once
+	iservices = flag.Bool("s", false, "To running as a services")
+	port      = flag.Int("port", 3244, "The TCP port that the server listens on")
+	address   = flag.String("address", "", "The net address that the server listens")
+	handle    *weather.Weather
+	once      sync.Once
+	sigs      = make(chan os.Signal, 1)
+	exit      = make(chan bool, 1)
 )
 
 func init() {
@@ -46,17 +48,26 @@ func init() {
 }
 
 func main() {
-	//C.daemon(1,1)  /*when the background runs, open this line, or you will run it as 'nohup ./WeatherInfos 2>&1 &' */
-	flag.Parse()
-	if flag.NFlag() <= 0 {
-		fmt.Printf("using default setting, listen on %s:%d\n", *address, *port)
-		log.Printf("using default setting, listen on %s:%d\n", *address, *port)
+	if !flag.Parsed() {
+		flag.Parse()
 	}
+	runAsServices()
+	if flag.NFlag() <= 0 {
+		fmt.Printf("Using default setting, listen on %s:%d\n", *address, *port)
+		log.Printf("Using default setting, listen on %s:%d\n", *address, *port)
+	}
+
 	getWeatherHandle()
+
 	router := http.NewServeMux()
 	router.HandleFunc("/", safe_http_handle(safe_statement))
 	router.HandleFunc("/weather", safe_http_handle(ShowWeather))
 	router.HandleFunc("/weather/status", safe_http_handle(ShowStatus))
+
+	fmt.Printf("Service listen on %s:%d\n", *address, *port)
+	log.Printf("Service listen on %s:%d\n", *address, *port)
+
+	go listenSignal()
 	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *address, *port), router); err != nil {
 		log.Println(err)
 	}
@@ -152,71 +163,34 @@ func safe_http_handle(fn http.HandlerFunc) http.HandlerFunc {
 
 func help() {
 	fmt.Printf("Provide weather access interface based on laboratory environment.\n")
-	fmt.Printf("Usage: %s [OPTION]...\n", os.Args[0])
-	fmt.Println("     -address\tSet the listener address, use 0.0.0.0 by default")
-	fmt.Println("     -port\tSet the listener port, use port 3244 by default")
+	fmt.Printf("Usage: %s [OPTION]...\n", filepath.Base(os.Args[0]))
+	fmt.Println("     -s\tSet process running as a services, using [false] by default")
+	fmt.Println("     -address\tSet the listener address, using [0.0.0.0] by default")
+	fmt.Println("     -port\tSet the listener port, using port [3244] by default")
 	fmt.Println("     -help\tdisplay help info and exit")
 }
 
-
-/*  //using C.daemon
-func daemon(nochdir, noclose int) int {
-    var ret, ret2 uintptr
-    var err syscall.Errno
- 
-    darwin := runtime.GOOS == "darwin"
- 
-    // already a daemon
-    if syscall.Getppid() == 1 {
-        return 0
-    }
- 
-    // fork off the parent process
-    ret, ret2, err = syscall.RawSyscall(syscall.SYS_FORK, 0, 0, 0)
-    if err != 0 {
-        return -1
-    }
- 
-    // failure
-    if ret2 < 0 {
-        os.Exit(-1)
-    }
- 
-    // handle exception for darwin
-    if darwin && ret2 == 1 {
-        ret = 0
-    }
- 
-    // if we got a good PID, then we call exit the parent process.
-    if ret > 0 {
-        os.Exit(0)
-    }
- 
-    // Change the file mode mask 
-    _ = syscall.Umask(0)
- 
-    // create a new SID for the child process
-    s_ret, s_errno := syscall.Setsid()
-    if s_errno != nil {
-        log.Printf("Error: syscall.Setsid errno: %d", s_errno)
-    }
-    if s_ret < 0 {
-        return -1
-    }
- 
-    if nochdir == 0 {
-        os.Chdir("/")
-    }
- 
-    if noclose == 0 {
-        f, e := os.OpenFile("/dev/null", os.O_RDWR, 0)
-        if e == nil {
-            fd := f.Fd()
-            syscall.Dup2(int(fd), int(os.Stdin.Fd()))
-            syscall.Dup2(int(fd), int(os.Stdout.Fd()))
-            syscall.Dup2(int(fd), int(os.Stderr.Fd()))
-        }
-    }
-    return 0
+func runAsServices() {
+	if *iservices {
+		cmd := exec.Command(os.Args[0], flag.Args()...)
+		cmd.Start()
+		fmt.Printf("%s [PID] %d running...\n", filepath.Base(os.Args[0]), cmd.Process.Pid)
+		log.Printf("%s [PID] %d running...\n", filepath.Base(os.Args[0]), cmd.Process.Pid)
+		*iservices = false
+		os.Exit(0)
+	}
 }
-*/
+
+func handleSignals(signal os.Signal) {
+	log.Println("Recv a signal:", signal)
+	exit <- true
+	os.Exit(0)
+}
+
+func listenSignal() {
+	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGABRT)
+	for {
+		sig := <-sigs
+		handleSignals(sig)
+	}
+}

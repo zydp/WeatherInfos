@@ -12,7 +12,7 @@
         4、 go install 
         5、 cp  .region_data.gob $GOBIN     #过度频繁请求中国天气网,IP会被禁止请求，如果你是第一次，可以忽略该步骤
         6、 cd $GOBIN  &&  mkdir logs
-        7、 ./WeatherInfos                  #使用 --help 获取帮助信息
+        7、 ./WeatherInfos -s=true -address=0.0.0.0 -port=3244                  #使用 --help 获取帮助信息
     
     
 ## 接口  
