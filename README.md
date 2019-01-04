@@ -2,7 +2,7 @@
 
 ## 安装
     1、 确保你已经正常安装golang, 并正确配置了GOPATH及GOROOT
-    2、 git clone https://192.168.8.61/daiping/WeatherInfos.git
+    2、 git clone https://github.com/zydp/WeatherInfos.git
     3、 cd WeatherInfos/
     
     #debug:
@@ -22,11 +22,11 @@
   
 
 ## 示例  
-    http://192.168.6.101:3244/weather/status                    //获取服务器状态  
-    http://192.168.6.101:3244/weather?city=上海                 //默认查上海城区    
-    http://192.168.6.101:3244/weather?city=上海_上海            //默认查上海城区  
-    http://192.168.6.101:3244/weather?city=上海_上海_松江       //查上海松江  
-    http://192.168.6.101:3244/weather?city=四川_成都_都江堰     //查四川_成都_都江堰  
+    http://serverip:3244/weather/status                 //获取服务器状态  
+    http://serverip:3244/weather?city=上海               //默认查上海城区    
+    http://serverip:3244/weather?city=上海_上海           //默认查上海城区  
+    http://serverip:3244/weather?city=上海_上海_松江      //查上海松江  
+    http://serverip:3244/weather?city=四川_成都_都江堰     //查四川_成都_都江堰  
   
 ##  更新机制  
     采用被动触发更新机制，最小更新间隔为4小时  
@@ -37,10 +37,10 @@
         ubuntu 16.04  CPU：Intel(R) Celeron(R) CPU G1820 @ 2.70GHz MEM：8G  
     
     测试命令:  
-        ab -n 100000 -c 12 "http://192.168.6.101:3244/weather?city=上海"  
+        ab -n 100000 -c 12 "http://serverip:3244/weather?city=上海"  
         
     测试结果:
-        Server Hostname:        192.168.6.101
+        Server Hostname:        serverip
         Server Port:            3244
         Document Path:          /weather?city=上海
         Document Length:        1653 bytes
