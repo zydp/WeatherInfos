@@ -21,7 +21,7 @@ import (
 const (
 	LOG_FILE   = "./logs/weather.log"
 	FIELD_NAME = "city"
-	STR_SEP    = "_"
+	STR_SEP    = ","
 )
 
 var (
@@ -62,13 +62,17 @@ func main() {
 	router := http.NewServeMux()
 	router.HandleFunc("/", safe_http_handle(safe_statement))
 	router.HandleFunc("/weather", safe_http_handle(ShowWeather))
+	router.HandleFunc("/citylist", safe_http_handle(ShowCityList))
 	router.HandleFunc("/weather/status", safe_http_handle(ShowStatus))
 
 	fmt.Printf("Service listen on %s:%d\n", *address, *port)
 	log.Printf("Service listen on %s:%d\n", *address, *port)
 
 	go listenSignal()
-	if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *address, *port), router); err != nil {
+	// if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *address, *port), router); err != nil {
+	// 	log.Println(err)
+	// }
+	if err := http.ListenAndServeTLS(fmt.Sprintf("%s:%d", *address, *port), "server.crt", "server.key", router); err != nil {
 		log.Println(err)
 	}
 }
@@ -96,6 +100,24 @@ func ShowStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	strStatus, _ := json.Marshal(status)
 	w.Write(strStatus)
+}
+
+func ShowCityList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, http.ErrBodyNotAllowed.Error(), http.StatusMethodNotAllowed)
+		return
+	}
+	w.Header().Add("Content-Type", "application/json")
+	r.ParseForm()
+
+	weatherHandle := getWeatherHandle()
+	if prov, ok := r.Form[FIELD_NAME]; ok {
+		resp, _ := weatherHandle.ShowCityList(prov[0])
+		w.Write(resp)
+	} else {
+		resp, _ := weatherHandle.ShowCityList("")
+		w.Write(resp)
+	}
 }
 
 func ShowWeather(w http.ResponseWriter, r *http.Request) {

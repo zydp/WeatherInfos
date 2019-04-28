@@ -4,6 +4,7 @@ import (
 	"WeatherInfos/lrucache"
 	"bufio"
 	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -42,6 +43,10 @@ const (
 	REGEXP_LIVE_INDEX_START    = "<ul class=\"clearfix\">"
 	REGEXT_GET_SPORT_STAR      = "class=\"star\""
 	DAY_INFO_SPLIT_SEP         = "</li>"
+	RESP_DATA_FIELD            = "data"
+	RESP_RCODE_FIELD           = "rcode"
+	RESP_RMSG_FIELD            = "rmsg"
+	STR_SEP                    = ","
 )
 
 const (
@@ -188,6 +193,61 @@ func (c *Weather) parseCityOrCountyInfo(info *TreeRegionInfo) {
 			info.Code_ = county_info.Code_
 		}
 	}
+}
+
+func (c *Weather) ShowCityList(provinceName string) (Resp []byte, err error) {
+
+	var Jmap = make(map[string]interface{})
+	var g_isOk bool = true
+	if "" == provinceName {
+		c.regionMu.RLock()
+		Pmap := make(map[string]interface{})
+		for provinceName, provinceValue := range c.treeRegion.Regions {
+			
+			var array []interface{}
+			for distName, _ := range provinceValue.Regions {
+				array = append(array, distName)
+			}
+			Pmap[provinceName] = array
+		}
+		Jmap[RESP_DATA_FIELD] = Pmap
+		c.regionMu.RUnlock()
+	} else {
+		names := strings.Split(provinceName, STR_SEP)
+		if len(names) < 2 || ""==names[1]{
+			g_isOk = false
+			goto RETURN
+		}
+		c.regionMu.RLock()
+		if province, isOk := c.treeRegion.Regions[names[0]]; isOk {
+			Pmap := make(map[string]interface{})
+			var array []interface{}
+			if dist, isOk := province.Regions[names[1]]; isOk {
+				for cityName, _ := range dist.Regions {
+					array = append(array, cityName)
+				}
+				Pmap[provinceName] = array
+				Jmap[RESP_DATA_FIELD] = Pmap
+			}else{
+				g_isOk = false
+				c.regionMu.RUnlock()
+				goto RETURN
+			}
+		}
+		c.regionMu.RUnlock()
+	}
+
+RETURN:
+	if !g_isOk {
+		Jmap[RESP_DATA_FIELD] = nil
+		Jmap[RESP_RCODE_FIELD] = http.StatusGone
+		Jmap[RESP_RMSG_FIELD] = http.StatusText(http.StatusGone)
+	} else {
+		Jmap[RESP_RCODE_FIELD] = http.StatusOK
+		Jmap[RESP_RMSG_FIELD] = http.StatusText(http.StatusOK)
+	}
+	Resp, _ = json.Marshal(Jmap)
+	return Resp, err
 }
 
 func (c *Weather) ShowCityWeather(province, district, city string) (Resp *WeatherInfo, err error) {
