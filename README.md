@@ -16,8 +16,8 @@
     
 ##  在容器中使用
     #确保你的机器上docker 已经安装，可以使用命令 `docker version` 来查看你的docker版本信息，如果命令出错请先安装docker.
-    1、docker pull ddddaiping/weather:1.0
-    2、docker run -d -p 3244:3244 --name weather ddddaiping/weather:1.0
+    1、docker pull erfengd/weather
+    2、docker run -d -p 3244:3244 --name weather erfengd/weather
     
 ## 接口  
     获取服务状态    http://ip:port/weather/status    
