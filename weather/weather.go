@@ -50,8 +50,9 @@ const (
 )
 
 const (
-	DEFAULT_LIMIT_SIZE             = 34
-	UPDATE_WEATHERINFO_GAP_MINUTES = 60*4 + 30
+	DEFAULT_LIMIT_SIZE = 34
+	//UPDATE_WEATHERINFO_GAP_MINUTES = 60*4 + 30
+	UPDATE_WEATHERINFO_GAP_MINUTES = 200
 )
 
 type Weather struct {
@@ -201,22 +202,25 @@ func (c *Weather) ShowCityList(provinceName string) (Resp []byte, err error) {
 	var g_isOk bool = true
 	if "" == provinceName {
 		c.regionMu.RLock()
-		Pmap := make(map[string]interface{})
+		pMaps := make(map[string]interface{})
 		for provinceName, provinceValue := range c.treeRegion.Regions {
-			
 			var array []interface{}
 			for distName, _ := range provinceValue.Regions {
 				array = append(array, distName)
 			}
-			Pmap[provinceName] = array
+			pMaps[provinceName] = array
 		}
-		Jmap[RESP_DATA_FIELD] = Pmap
+		Jmap[RESP_DATA_FIELD] = pMaps
 		c.regionMu.RUnlock()
 	} else {
 		names := strings.Split(provinceName, STR_SEP)
-		if len(names) < 2 || ""==names[1]{
-			g_isOk = false
-			goto RETURN
+		//if len(names) < 2 || "" == names[1] {
+		//	g_isOk = false
+		//	goto RETURN
+		//}
+
+		if len(names) < 2 {
+			names = append(names, names[0])
 		}
 		c.regionMu.RLock()
 		if province, isOk := c.treeRegion.Regions[names[0]]; isOk {
@@ -228,7 +232,7 @@ func (c *Weather) ShowCityList(provinceName string) (Resp []byte, err error) {
 				}
 				Pmap[provinceName] = array
 				Jmap[RESP_DATA_FIELD] = Pmap
-			}else{
+			} else {
 				g_isOk = false
 				c.regionMu.RUnlock()
 				goto RETURN

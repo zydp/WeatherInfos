@@ -25,9 +25,11 @@ const (
 )
 
 var (
-	iservices = flag.Bool("s", false, "To running as a services")
+	iServices = flag.Bool("s", false, "To running as a services")
 	port      = flag.Int("port", 3244, "The TCP port that the server listens on")
 	address   = flag.String("address", "", "The net address that the server listens")
+	crt       = flag.String("crt", "", "Specify the server credential file")
+	key       = flag.String("key", "", "Specify the server key file")
 	handle    *weather.Weather
 	once      sync.Once
 	sigs      = make(chan os.Signal, 1)
@@ -69,11 +71,14 @@ func main() {
 	log.Printf("Service listen on %s:%d\n", *address, *port)
 
 	go listenSignal()
-	// if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *address, *port), router); err != nil {
-	// 	log.Println(err)
-	// }
-	if err := http.ListenAndServeTLS(fmt.Sprintf("%s:%d", *address, *port), "server.crt", "server.key", router); err != nil {
-		log.Println(err)
+	if "" == *crt {
+		if err := http.ListenAndServe(fmt.Sprintf("%s:%d", *address, *port), router); err != nil {
+			log.Println(err)
+		}
+	} else {
+		if err := http.ListenAndServeTLS(fmt.Sprintf("%s:%d", *address, *port), *crt, *key, router); err != nil {
+			log.Println(err)
+		}
 	}
 }
 
@@ -118,32 +123,33 @@ func ShowCityList(w http.ResponseWriter, r *http.Request) {
 		resp, _ := weatherHandle.ShowCityList("")
 		w.Write(resp)
 	}
+
 }
 
 func ShowWeather(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, http.ErrBodyNotAllowed.Error(), http.StatusMethodNotAllowed)
+		errResp(w, http.StatusMethodNotAllowed, http.ErrBodyNotAllowed.Error())
 		return
 	}
 	r.ParseForm()
 	prov, has := r.Form[FIELD_NAME]
 	if !has {
-		http.Error(w, "parameter error", http.StatusBadRequest)
+		errResp(w, http.StatusBadRequest, "parameter error")
 		return
 	}
 	strCity := prov[0]
 	params := strings.Split(strCity, STR_SEP)
-	paramslen := len(params)
+	paramsLen := len(params)
 	weatherHandle := getWeatherHandle()
 	var err error
 	var Resp *weather.WeatherInfo
 
 	if nil == weatherHandle {
 		log.Printf("weatherHandle is nil, please check")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		errResp(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	switch paramslen {
+	switch paramsLen {
 	case 3:
 		Resp, err = weatherHandle.ShowCityWeather(params[0], params[1], params[2])
 	case 2:
@@ -151,24 +157,32 @@ func ShowWeather(w http.ResponseWriter, r *http.Request) {
 	case 1:
 		Resp, err = weatherHandle.ShowCityWeather(params[0], params[0], params[0])
 	default:
-		http.Error(w, "parameter error", http.StatusBadRequest)
+		errResp(w, http.StatusBadRequest, "parameter error")
 		return
 	}
 	w.Header().Add("Content-Type", "application/json")
 	if nil != err {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		errResp(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	if nil == Resp {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		errResp(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	jsonstr, err := json.Marshal(Resp)
+	jsonStr, err := json.Marshal(Resp)
 	if nil != err {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		errResp(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	w.Write(jsonstr)
+	w.Write(jsonStr)
+}
+
+func errResp(w http.ResponseWriter, rCode int, rMsg string) {
+	var Jmap = make(map[string]interface{})
+	Jmap[weather.RESP_RCODE_FIELD] = rCode
+	Jmap[weather.RESP_RMSG_FIELD] = rMsg
+	strResp, _ := json.Marshal(Jmap)
+	w.Write(strResp)
 }
 
 func safe_http_handle(fn http.HandlerFunc) http.HandlerFunc {
@@ -186,19 +200,21 @@ func safe_http_handle(fn http.HandlerFunc) http.HandlerFunc {
 func help() {
 	fmt.Printf("Provide weather access interface based on laboratory environment.\n")
 	fmt.Printf("Usage: %s [OPTION]...\n", filepath.Base(os.Args[0]))
-	fmt.Println("     -s\tSet process running as a services, using [false] by default")
+	fmt.Println("     -s\t\tSet process running as a services, using [false] by default")
 	fmt.Println("     -address\tSet the listener address, using [0.0.0.0] by default")
 	fmt.Println("     -port\tSet the listener port, using port [3244] by default")
+	fmt.Println("     -crt\tSpecify the server credential file")
+	fmt.Println("     -key\tSpecify the server key file")
 	fmt.Println("     -help\tdisplay help info and exit")
 }
 
 func runAsServices() {
-	if *iservices {
+	if *iServices {
 		cmd := exec.Command(os.Args[0], flag.Args()...)
 		cmd.Start()
 		fmt.Printf("%s [PID] %d running...\n", filepath.Base(os.Args[0]), cmd.Process.Pid)
 		log.Printf("%s [PID] %d running...\n", filepath.Base(os.Args[0]), cmd.Process.Pid)
-		*iservices = false
+		*iServices = false
 		os.Exit(0)
 	}
 }

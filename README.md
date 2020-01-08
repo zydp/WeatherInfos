@@ -20,20 +20,25 @@
     2、docker run -d -p 3244:3244 --name weather erfengd/weather
     
 ## 接口  
-    获取服务状态    http://ip:port/weather/status    
-    获取天气信息    http://ip:port/weather?city=xxx    
+    获取服务状态    http://ip:port/weather/status
+    获取城市列表    http://ip:port/citylist?city=xx,xx    
+    获取天气信息    http://ip:port/weather?city=xx,xx,xx    
     default       http://ip:port/    
   
 
 ## 示例  
-    http://serverip:3244/weather/status                 //获取服务器状态  
-    http://serverip:3244/weather?city=上海               //默认查上海城区    
-    http://serverip:3244/weather?city=上海_上海           //默认查上海城区  
-    http://serverip:3244/weather?city=上海_上海_松江      //查上海松江  
-    http://serverip:3244/weather?city=四川_成都_都江堰     //查四川_成都_都江堰  
+    // 状态获取
+    http://serverip:3244/weather/status                  //获取服务器状态
+    // 城市列表获取
+    http://serverip:3244/citylist?ciyt=上海,上海          //省，市
+    // 天气获取
+    http://serverip:3244/weather?city=上海               //省    
+    http://serverip:3244/weather?city=上海,上海           //省，市  
+    http://serverip:3244/weather?city=上海,上海,松江      //省，市，区 
+    http://serverip:3244/weather?city=四川,成都,都江堰     //省，市，区  
   
 ##  更新机制  
-    采用被动触发更新机制，最小更新间隔为4小时  
+    采用被动触发更新机制，最小更新间隔为150分钟  
     内部缓存数据结构，采用lru原则进行淘汰  
 
 ##  并发测试
