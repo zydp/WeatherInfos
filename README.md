@@ -16,8 +16,13 @@
     
 ##  在容器中使用
     #确保你的机器上docker 已经安装，可以使用命令 `docker version` 来查看你的docker版本信息，如果命令出错请先安装docker.
-    1、docker pull erfengd/weather
-    2、docker run -d -p 3244:3244 --name weather erfengd/weather
+    
+    1、docker pull erfengd/weather:1.0  
+    
+    2、docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather:1.0 
+    
+    dockerhub地址：https://hub.docker.com/r/erfengd/weather
+
     
 ## 接口  
     获取服务状态    http://ip:port/weather/status
@@ -30,7 +35,7 @@
     // 状态获取
     http://serverip:3244/weather/status                  //获取服务器状态
     // 城市列表获取
-    http://serverip:3244/citylist?ciyt=上海,上海          //省，市
+    http://serverip:3244/citylist?city=上海,上海          //省，市
     // 天气获取
     http://serverip:3244/weather?city=上海               //省    
     http://serverip:3244/weather?city=上海,上海           //省，市  
