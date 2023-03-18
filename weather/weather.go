@@ -197,8 +197,7 @@ func (c *Weather) parseCityOrCountyInfo(info *TreeRegionInfo) {
 }
 
 func (c *Weather) ShowCityList(provinceName string) (Resp []byte, err error) {
-
-	var Jmap = make(map[string]interface{})
+var Jmap = make(map[string]interface{})
 	var g_isOk bool = true
 	if "" == provinceName {
 		c.regionMu.RLock()
@@ -214,31 +213,29 @@ func (c *Weather) ShowCityList(provinceName string) (Resp []byte, err error) {
 		c.regionMu.RUnlock()
 	} else {
 		names := strings.Split(provinceName, STR_SEP)
-		//if len(names) < 2 || "" == names[1] {
-		//	g_isOk = false
-		//	goto RETURN
-		//}
-
-		if len(names) < 2 {
-			names = append(names, names[0])
-		}
 		c.regionMu.RLock()
 		if province, isOk := c.treeRegion.Regions[names[0]]; isOk {
 			Pmap := make(map[string]interface{})
 			var array []interface{}
-			if dist, isOk := province.Regions[names[1]]; isOk {
-				for cityName, _ := range dist.Regions {
+			if len(names) >= 2 {
+				if dist, isOk := province.Regions[names[1]]; isOk {
+					for cityName, _ := range dist.Regions {
+						array = append(array, cityName)
+					}
+				} else {
+					g_isOk = false
+				}
+				Pmap[names[0]+","+names[1]] = array
+			} else {
+				for cityName, _ := range province.Regions {
 					array = append(array, cityName)
 				}
 				Pmap[provinceName] = array
-				Jmap[RESP_DATA_FIELD] = Pmap
-			} else {
-				g_isOk = false
-				c.regionMu.RUnlock()
-				goto RETURN
 			}
+			Jmap[RESP_DATA_FIELD] = Pmap
 		}
 		c.regionMu.RUnlock()
+		goto RETURN
 	}
 
 RETURN:
