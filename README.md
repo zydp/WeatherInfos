@@ -19,7 +19,7 @@
     
     1、docker pull erfengd/weather:1.0  
     
-    2、docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather:1.0 
+    2、docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather:1.1 
     
     dockerhub地址：https://hub.docker.com/r/erfengd/weather
 
