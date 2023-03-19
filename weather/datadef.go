@@ -14,6 +14,7 @@ type RegionInfo struct {
 	Code_     string `json:"-"`
 	Name_     string `json:"name"`
 	FullName_ string `json:"fullname"`
+	Spell_    string `json:"spell"`
 }
 
 /*
@@ -48,6 +49,7 @@ type WeatherInfo struct {
 	Code_       string `json:"-"`
 	Url_        string `json:"-"`
 	Name_       string `json:"name"`
+	Spell_      string `json:"spell"`
 	UpdateTime_ string `json:"updatetime"`
 	getime_     time.Time
 	FullName_   string                                `json:"fullname"`

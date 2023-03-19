@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mozillazg/go-pinyin"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -110,9 +111,13 @@ func (c *Weather) InitRegionTree() (err error) {
 			wg.Add(1)
 			go func(url, name string, cache chan<- *TreeRegionInfo) {
 				defer wg.Done()
+				var spell string
+				for _, v := range pinyin.LazyConvert(name, nil) {
+					spell += v
+				}
 				regionInfo := &TreeRegionInfo{
 					RegionInfo: RegionInfo{
-						Name_: name, Url_: url,
+						Name_: name, Url_: url, Spell_: spell,
 					},
 					Regions: make(map[string]*TreeRegionInfo),
 				}
@@ -127,7 +132,7 @@ func (c *Weather) InitRegionTree() (err error) {
 			if nil == info {
 				break
 			}
-			c.treeRegion.Regions[info.Name_] = info
+			c.treeRegion.Regions[info.Spell_] = info
 		}
 		if err := c.saveRegionData(REGION_CACHE_FILE); nil != err {
 			log.Println(err)
@@ -165,11 +170,16 @@ func (c *Weather) parseCityOrCountyInfo(info *TreeRegionInfo) {
 		sinfo := string(buf[index[0] : index[1]+end_index[1]])
 		counties := infoExtraction.FindAllString(sinfo, -1)
 		cityName := namefind.FindString(sinfo)
+		var spellCityName string
+		for _, v := range pinyin.LazyConvert(cityName, nil) {
+			spellCityName += v
+		}
 		if _, had := info.Regions[cityName]; had {
 			break /*repeat*/
 		}
+
 		regionInfo := &TreeRegionInfo{
-			RegionInfo: RegionInfo{Name_: cityName, FullName_: fmt.Sprintf("%s_%s", info.Name_, cityName)},
+			RegionInfo: RegionInfo{Name_: cityName, FullName_: fmt.Sprintf("%s,%s", info.Name_, cityName), Spell_: spellCityName},
 			Regions:    make(map[string]*TreeRegionInfo),
 		}
 		for _, cinfo := range counties {
@@ -177,35 +187,41 @@ func (c *Weather) parseCityOrCountyInfo(info *TreeRegionInfo) {
 			if DISCARD_INFO_FIELD == countyName { /*skip the description*/
 				continue
 			}
+			var spellCountyName = ""
+			for _, v := range pinyin.LazyConvert(countyName, nil) {
+				spellCountyName += v
+			}
+
 			county := &TreeRegionInfo{
 				RegionInfo: RegionInfo{
 					Url_:      urlfind.FindString(cinfo),
 					Code_:     codefind.FindString(cinfo),
 					Name_:     countyName,
-					FullName_: fmt.Sprintf("%s_%s_%s", info.Name_, cityName, countyName),
+					Spell_:    fmt.Sprintf("%s,%s,%s", info.Spell_, regionInfo.Spell_, spellCountyName),
+					FullName_: fmt.Sprintf("%s,%s,%s", info.Name_, cityName, countyName),
 				},
 			}
-			regionInfo.Regions[county.Name_] = county
+			regionInfo.Regions[spellCountyName] = county
 		}
-		info.Regions[cityName] = regionInfo
+		info.Regions[spellCityName] = regionInfo
 	}
-	if cinfos, ok := info.Regions[info.Name_]; ok {
-		if county_info, had := cinfos.Regions[info.Name_]; had {
+	if cinfos, ok := info.Regions[info.Spell_]; ok {
+		if county_info, had := cinfos.Regions[info.Spell_]; had {
 			info.Code_ = county_info.Code_
 		}
 	}
 }
 
 func (c *Weather) ShowCityList(provinceName string) (Resp []byte, err error) {
-var Jmap = make(map[string]interface{})
+	var Jmap = make(map[string]interface{})
 	var g_isOk bool = true
 	if "" == provinceName {
 		c.regionMu.RLock()
 		pMaps := make(map[string]interface{})
 		for provinceName, provinceValue := range c.treeRegion.Regions {
 			var array []interface{}
-			for distName, _ := range provinceValue.Regions {
-				array = append(array, distName)
+			for _, dist := range provinceValue.Regions {
+				array = append(array, map[string]string{"Name": dist.FullName_, "Spell": provinceValue.Spell_ + "," + dist.Spell_})
 			}
 			pMaps[provinceName] = array
 		}
@@ -213,22 +229,38 @@ var Jmap = make(map[string]interface{})
 		c.regionMu.RUnlock()
 	} else {
 		names := strings.Split(provinceName, STR_SEP)
+		var spellParams []string = make([]string, 0)
+
+		for i := 0; i < len(names); i++ {
+			var spellStrCity = ""
+			for _, v := range pinyin.LazyConvert(names[i], nil) {
+				spellStrCity += v
+			}
+			spellParams = append(spellParams, spellStrCity)
+		}
+
+		for k, v := range spellParams {
+			if "" == v {
+				spellParams[k] = names[k]
+			}
+		}
+
 		c.regionMu.RLock()
-		if province, isOk := c.treeRegion.Regions[names[0]]; isOk {
+		if province, isOk := c.treeRegion.Regions[spellParams[0]]; isOk {
 			Pmap := make(map[string]interface{})
 			var array []interface{}
-			if len(names) >= 2 {
-				if dist, isOk := province.Regions[names[1]]; isOk {
-					for cityName, _ := range dist.Regions {
-						array = append(array, cityName)
+			if len(spellParams) >= 2 {
+				if dist, isOk := province.Regions[spellParams[1]]; isOk {
+					for _, dist := range dist.Regions {
+						array = append(array, map[string]string{"Name": dist.FullName_, "Spell": dist.Spell_})
 					}
 				} else {
 					g_isOk = false
 				}
-				Pmap[names[0]+","+names[1]] = array
+				Pmap[spellParams[0]+","+spellParams[1]] = array
 			} else {
-				for cityName, _ := range province.Regions {
-					array = append(array, cityName)
+				for _, dist := range province.Regions {
+					array = append(array, map[string]string{"Name": dist.FullName_, "Spell": province.Spell_ + "," + dist.Spell_})
 				}
 				Pmap[provinceName] = array
 			}
@@ -339,6 +371,7 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 		FullName_: cityinfo.FullName_,
 		Code_:     cityinfo.Code_,
 		Url_:      cityinfo.Url_,
+		Spell_:    cityinfo.Spell_,
 	}
 	/*parse 7days weather*/
 	uptime := numfind_re.FindAllString(string(body[day7_start_index[0]-30:day7_start_index[0]]), 2)
@@ -478,11 +511,11 @@ func (c *weather) getTopList() (list string) {
 func (c *Weather) TraversalRegionTree() {
 	//implTraversal(c.treeRegion)
 	for _, province := range c.treeRegion.Regions {
-		fmt.Printf("Name:%s\tCode:%s\tUrl:%s\n", province.Name_, province.Code_, province.Url_)
+		fmt.Printf("Name:%s(%s)\tCode:%s\tUrl:%s\n", province.Name_, province.Spell_, province.Code_, province.Url_)
 		for _, citys := range province.Regions {
-			fmt.Printf("    %s\n", citys.FullName_)
+			fmt.Printf("    %s（%s）\n", citys.FullName_, citys.Spell_)
 			for _, county := range citys.Regions {
-				fmt.Printf("      └──\tName:%s\tCode:%s\tUrl:%s\n", county.FullName_, county.Code_, county.Url_)
+				fmt.Printf("      └──\tName:%s（%s）\tCode:%s\tUrl:%s\n", county.FullName_, county.Spell_, county.Code_, county.Url_)
 			}
 		}
 	}
@@ -494,7 +527,7 @@ func implTraversal(region *TreeRegionInfo) {
 	if nil == region {
 		return
 	}
-	fmt.Printf("Name:%s FullName:%s Url:%s Code:%s\n", region.Name_, region.FullName_, region.Url_, region.Code_)
+	fmt.Printf("Name:%s(%s) FullName:%s Url:%s Code:%s\n", region.Name_, region.Spell_, region.FullName_, region.Url_, region.Code_)
 	for _, info := range region.Regions {
 		implTraversal(info)
 	}

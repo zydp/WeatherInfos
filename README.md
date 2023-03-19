@@ -17,9 +17,9 @@
 ##  在容器中使用
     #确保你的机器上docker 已经安装，可以使用命令 `docker version` 来查看你的docker版本信息，如果命令出错请先安装docker.
     
-    1、docker pull erfengd/weather:1.0  
+    1、docker pull erfengd/weather  
     
-    2、docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather:1.0 
+    2、docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather 
     
     dockerhub地址：https://hub.docker.com/r/erfengd/weather
 
@@ -41,7 +41,22 @@
     http://serverip:3244/weather?city=上海,上海           //省，市  
     http://serverip:3244/weather?city=上海,上海,松江      //省，市，区 
     http://serverip:3244/weather?city=四川,成都,都江堰     //省，市，区  
-  
+
+## 2023-03-19 更新
+    因一些终端设备对中文支持不太友好，因此增加了汉字拼音的支持。
+    // 城市列表获取
+    http://serverip:3244/citylist?city=shanghai,上海          //省，市
+    http://serverip:3244/citylist?city=shanghai,shanghai      //省，市
+    // 天气获取
+    http://serverip:3244/weather?city=shanghai                     //省    
+    http://serverip:3244/weather?city=shanghai,shanghai            //省，市  
+    http://serverip:3244/weather?city=shanghai,上海,songjiang      //省，市，区 
+    http://serverip:3244/weather?city=四川,chengdou,都江堰           //省，市，区  
+    注：
+        因汉字转拼音采用第三方库，对一些多音字的支持不够完善。
+        如成都的'都'会被读作'dou',重庆的'重'会被读作'zhong'
+        因此在使用拼音进查询时，最好使用cltilist接口获取到的拼音写法进行调用
+
 ##  更新机制  
     采用被动触发更新机制，最小更新间隔为150分钟  
     内部缓存数据结构，采用lru原则进行淘汰  

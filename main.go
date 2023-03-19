@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/mozillazg/go-pinyin"
 	"log"
 	"net/http"
 	"os"
@@ -19,9 +20,10 @@ import (
 )
 
 const (
-	LOG_FILE   = "./logs/weather.log"
-	FIELD_NAME = "city"
-	STR_SEP    = ","
+	LOG_FILE        = "./logs/weather.log"
+	FIELD_NAME      = "city"
+	FIELD_NAME_CODE = "cityCode"
+	STR_SEP         = ","
 )
 
 var (
@@ -132,14 +134,34 @@ func ShowWeather(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	r.ParseForm()
+
 	prov, has := r.Form[FIELD_NAME]
+	//cityCode, hasCode := r.Form[FIELD_NAME_CODE]
 	if !has {
 		errResp(w, http.StatusBadRequest, "parameter error")
 		return
 	}
+
 	strCity := prov[0]
 	params := strings.Split(strCity, STR_SEP)
+	var spellParams []string = make([]string, 0)
+
+	for i := 0; i < len(params); i++ {
+		var spellStrCity = ""
+		for _, v := range pinyin.LazyConvert(params[i], nil) {
+			spellStrCity += v
+		}
+		spellParams = append(spellParams, spellStrCity)
+
+	}
 	paramsLen := len(params)
+
+	for k, v := range spellParams {
+		if "" == v {
+			spellParams[k] = params[k]
+		}
+	}
+
 	weatherHandle := getWeatherHandle()
 	var err error
 	var Resp *weather.WeatherInfo
@@ -151,15 +173,16 @@ func ShowWeather(w http.ResponseWriter, r *http.Request) {
 	}
 	switch paramsLen {
 	case 3:
-		Resp, err = weatherHandle.ShowCityWeather(params[0], params[1], params[2])
+		Resp, err = weatherHandle.ShowCityWeather(spellParams[0], spellParams[1], spellParams[2])
 	case 2:
-		Resp, err = weatherHandle.ShowCityWeather(params[0], params[1], params[1])
+		Resp, err = weatherHandle.ShowCityWeather(spellParams[0], spellParams[1], spellParams[1])
 	case 1:
-		Resp, err = weatherHandle.ShowCityWeather(params[0], params[0], params[0])
+		Resp, err = weatherHandle.ShowCityWeather(spellParams[0], spellParams[0], spellParams[0])
 	default:
 		errResp(w, http.StatusBadRequest, "parameter error")
 		return
 	}
+
 	w.Header().Add("Content-Type", "application/json")
 	if nil != err {
 		errResp(w, http.StatusBadRequest, err.Error())
