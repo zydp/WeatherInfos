@@ -61,6 +61,9 @@ func main() {
 		log.Printf("Using default setting, listen on %s:%d\n", *address, *port)
 	}
 
+	//根据设定的间隔去进行告警列表的获取
+	go weather.CheckAlarmListFromWeatherCom()
+
 	getWeatherHandle()
 
 	router := http.NewServeMux()
@@ -93,7 +96,7 @@ func safe_statement(w http.ResponseWriter, r *http.Request) {
 
 func getWeatherHandle() (weatherhandle *weather.Weather) {
 	once.Do(func() {
-		handle = weather.New(weather.DEFAULT_LIMIT_SIZE)
+		handle = weather.New(int(weather.DEFAULT_LIMIT_SIZE))
 		if err := handle.InitRegionTree(); err != nil {
 			log.Println(err)
 		}

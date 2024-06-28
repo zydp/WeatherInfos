@@ -20,10 +20,6 @@ import (
 	"unsafe"
 )
 
-func init() {
-
-}
-
 const (
 	WEATHER_SITE               = "http://www.weather.com.cn"
 	REGION_SITE                = "http://www.weather.com.cn/textFC/hb.shtml"
@@ -48,12 +44,13 @@ const (
 	RESP_RCODE_FIELD           = "rcode"
 	RESP_RMSG_FIELD            = "rmsg"
 	STR_SEP                    = ","
+	//------
+	REGEXP_GET_ALARM_START = `<div class="sk_alarm">`
 )
 
-const (
-	DEFAULT_LIMIT_SIZE = 34
-	//UPDATE_WEATHERINFO_GAP_MINUTES = 60*4 + 30
-	UPDATE_WEATHERINFO_GAP_MINUTES = 200
+var (
+	DEFAULT_LIMIT_SIZE             int64
+	UPDATE_WEATHERINFO_GAP_MINUTES int64
 )
 
 type Weather struct {
@@ -65,6 +62,18 @@ type Weather struct {
 	nevict                            int64
 	treeRegion                        *TreeRegionInfo
 	inited                            bool
+}
+
+func init() {
+	DEFAULT_LIMIT_SIZE = 34
+	UPDATE_WEATHERINFO_GAP_MINUTES = 60
+	var e = os.Getenv("REFRESH_RATE")
+	eNum, _ := strconv.ParseInt(e, 10, 64)
+	if eNum > 0 {
+		//这里没有检查范围，为了安全起见应该检查一下范围。
+		//但是我并不想惯着傻逼,就这样吧
+		UPDATE_WEATHERINFO_GAP_MINUTES = eNum
+	}
 }
 
 func New(maxEntries int) *Weather {
@@ -328,7 +337,7 @@ func (c *Weather) ShowCityWeather(province, district, city string) (Resp *Weathe
 
 func timeCheck(dataTime time.Time) (ok bool) {
 	dur := time.Now().Sub(dataTime)
-	return dur.Minutes() >= UPDATE_WEATHERINFO_GAP_MINUTES
+	return dur.Minutes() >= float64(UPDATE_WEATHERINFO_GAP_MINUTES)
 }
 
 func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (Resp *WeatherInfo, err error) {
@@ -373,6 +382,7 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 		Url_:      cityinfo.Url_,
 		Spell_:    cityinfo.Spell_,
 	}
+
 	/*parse 7days weather*/
 	uptime := numfind_re.FindAllString(string(body[day7_start_index[0]-30:day7_start_index[0]]), 2)
 	SevenDaysWeatherInfo.UpdateTime_ = fmt.Sprintf("%s:%s", uptime[0], uptime[1])
@@ -486,6 +496,11 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 	} else {
 		SevenDaysWeatherInfo.getime_ = timeNow
 	}
+	//查询是需要获取告警信息
+	location, ok := GetLocationInfoByID(cityinfo.Code_)
+	if ok {
+		GetAlarmDetails(ALARM_DETAILS+location.FileName, SevenDaysWeatherInfo)
+	}
 	c.addWeatherInfoToCache(cityinfo.Code_, SevenDaysWeatherInfo)
 	return SevenDaysWeatherInfo, err
 }
@@ -537,11 +552,12 @@ func (c *Weather) Stats() CacheStats {
 	c.weatherMu.RLock()
 	defer c.weatherMu.RUnlock()
 	return CacheStats{
-		Bytes:     c.nbytes,
-		Items:     c.itemsLocked(),
-		Gets:      c.nget,
-		Hits:      c.nhit,
-		Evictions: c.nevict,
+		Bytes:       c.nbytes,
+		Items:       c.itemsLocked(),
+		Gets:        c.nget,
+		Hits:        c.nhit,
+		Evictions:   c.nevict,
+		RefreshRate: UPDATE_WEATHERINFO_GAP_MINUTES,
 	}
 }
 
