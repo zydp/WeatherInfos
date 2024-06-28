@@ -16,13 +16,15 @@
     
 ##  在容器中使用
     #确保你的机器上docker 已经安装，可以使用命令 `docker version` 来查看你的docker版本信息，如果命令出错请先安装docker.
-    
-    1、docker pull erfengd/weather  
-    
 
-    2、docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather 
+    docker pull erfengd/weather  
+    //default
 
-    
+    docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather  
+   
+     //If you want to specify a refresh rate
+    docker run -idt --name WeatherInfos --restart=always -e -e REFRESH_RATE=30 -p 3244:3244 erfengd/weather
+
     dockerhub地址：https://hub.docker.com/r/erfengd/weather
 
     

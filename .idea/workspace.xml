@@ -5,15 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="435bb822-fca8-4bfb-b6a1-c6c589d916a2" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/weather/alarm_infos.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/WeatherInfos.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/WeatherInfos.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/weather/datadef.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/datadef.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/weather/weather.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/weather.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
