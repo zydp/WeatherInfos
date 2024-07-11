@@ -1,30 +1,29 @@
 # 2018-10-15 17:36:00
 
 ## 安装
-    1、 确保你已经正常安装golang, 并正确配置了GOPATH及GOROOT
+    1、 确保你已经正常安装golang, 并正确配置了GOPATH及GOROOT(新版已使用gomod)
     2、 git clone https://github.com/zydp/WeatherInfos.git
     3、 cd WeatherInfos/
-    
-    #debug:
-        4、 go run main.go    #run it in debug
-    
-    #relese:
-        4、 go install 
-        5、 cp  .region_data.gob $GOBIN     #过度频繁请求中国天气网,IP会被禁止请求，如果你是第一次，可以忽略该步骤
-        6、 cd $GOBIN  &&  mkdir logs
-        7、 ./WeatherInfos -s=true -address=0.0.0.0 -port=3244                  #使用 --help 获取帮助信息
+    4、 go mod tidy
+    5、 go run .
+    6、 go build --tags netgo -ldflags="-s -w"
+    tips: ./WeatherInfos --help 获取帮助信息
     
 ##  在容器中使用
     #确保你的机器上docker 已经安装，可以使用命令 `docker version` 来查看你的docker版本信息，如果命令出错请先安装docker.
+    
+    // pull image
+    docker pull erfengd/weather       #default version :latest
+            or
+    docker pull erfengd/weather:1.3   #specify version
 
-    docker pull erfengd/weather  
-    //default
-
+    // to run
     docker run -idt --name WeatherInfos --restart=always -p 3244:3244 erfengd/weather  
    
-     //If you want to specify a refresh rate
+    // If you want to specify a refresh rate
     docker run -idt --name WeatherInfos --restart=always -e -e REFRESH_RATE=30 -p 3244:3244 erfengd/weather
-
+    
+    //uri
     dockerhub地址：https://hub.docker.com/r/erfengd/weather
 
     
@@ -60,10 +59,16 @@
         因汉字转拼音采用第三方库，对一些多音字的支持不够完善。
         如成都的'都'会被读作'dou',重庆的'重'会被读作'zhong'
         因此在使用拼音进查询时，最好使用citylist接口获取到的拼音写法进行调用
+## 2024-07-11 更新
+    1、增加了当前实时天气
+    2、预警信息支持多条
+    3、检查了最小更新间隔
 
-##  更新机制  
-    采用被动触发更新机制，最小更新间隔为66分钟  
-    内部缓存数据结构，采用lru原则进行淘汰  
+##  更新机制
+    1、7天预报采用被动触发更新机制，如果未指定更新间隔，则最小更新间隔为60分钟
+    2、预警信息更新间隔与7天预报更新间隔一致，但不使用lru进行淘汰
+    3、当前天气信息更新间隔为3分钟，且不可更改
+    tips:内部缓存数据结构，采用lru原则进行淘汰  
 
 ##  并发测试
     测试环境:  
@@ -93,7 +98,183 @@
         Processing:     1    1   0.5      1      10
         Waiting:        1    1   0.5      1      10
         Total:          1    2   0.4      2      11
-    
+
+##  返回数据示例
+```
+{  
+    "name": "上海",                          //名称
+    "spell": "shanghai,shanghai,shanghai",  //地点拼音
+    "updatetime": "11:30",                  //官方7天数据更新时间
+    "alarm": true,                          //是否有预警信息
+    "servertime": "2024-07-11 15:21:41",    //服务器时间
+    "fullname": "上海,上海,上海",             //地点名称
+    "nowinfo": {                            //当前天气信息
+        "temp": "26.1",                     //温度
+        "tempf": "79",                      //华氏温度
+        "windirection": "东北风",            //风向
+        "windlevel": "1级",                 //风级
+        "windspeed": "1km/h",               //风速
+        "humidity": "82%",                  //湿速
+        "pressure": "1002",                 //大气压
+        "visibility": "14km",               //能见度
+        "time": "15:05",                    //更新时间
+        "aqi": "33",                        //空气质量指数
+        "weather": "多云",                   //当前天气
+        "date": "07月11日(星期四)"            //更新日期
+    },  
+    "liveindex": [                          //生活指数
+        {  
+            "name": "感冒指数",              //指数名
+            "level": "较易发",               //级别
+            "tips": "天凉，湿度大，较易感冒。"  //小贴示
+        },  
+        {
+            "name": "运动指数",
+            "level": "较不宜",
+            "tips": "有降水，推荐您在室内进行休闲运动。"
+        },
+        {
+            "name": "过敏指数",
+            "level": "不易发",
+            "tips": "除特殊体质，无需担心过敏问题。"
+        },
+        {
+            "name": "穿衣指数",
+            "level": "热",
+            "tips": "适合穿T恤、短薄外套等夏季服装。"
+        },
+        {
+            "name": "洗车指数",
+            "level": "不宜",
+            "tips": "有雨，雨水和泥水会弄脏爱车。"
+        },
+        {
+            "name": "紫外线指数",
+            "level": "最弱",
+            "tips": "辐射弱，涂擦SPF8-12防晒护肤品。"
+        }
+    ],
+    "weather": [ //7天天气
+        {
+            "date": "11日（今天）",    //日期
+            "sun": "大雨转中雨",       //天气
+            "temperature": [         //温度
+                24,                  //最低温
+                28                   //最高温
+            ],
+            "wind": {                //风
+                "from": "无持续风向",  //来自
+                "to": "无持续风向",    //去到
+                "level": "<3级"       //风速
+            }
+        },
+        {
+            "date": "12日（明天）",
+            "sun": "中雨转小雨",
+            "temperature": [
+                26,
+                29
+            ],
+            "wind": {
+                "from": "无持续风向",
+                "to": "无持续风向",
+                "level": "<3级"
+            }
+        },
+        {
+            "date": "13日（后天）",
+            "sun": "中雨转小雨",
+            "temperature": [
+                27,
+                30
+            ],
+            "wind": {
+                "from": "无持续风向",
+                "to": "无持续风向",
+                "level": "<3级"
+            }
+        },
+        {
+            "date": "14日（周日）",
+            "sun": "小雨转多云",
+            "temperature": [
+                27,
+                31
+            ],
+            "wind": {
+                "from": "无持续风向",
+                "to": "无持续风向",
+                "level": "<3级"
+            }
+        },
+        {
+            "date": "15日（周一）",
+            "sun": "阴",
+            "temperature": [
+                28,
+                33
+            ],
+            "wind": {
+                "from": "南风",
+                "to": "南风",
+                "level": "3-4级"
+            }
+        },
+        {
+            "date": "16日（周二）",
+            "sun": "阴转多云",
+            "temperature": [
+                29,
+                34
+            ],
+            "wind": {
+                "from": "南风",
+                "to": "南风",
+                "level": "3-4级"
+            }
+        },
+        {
+            "date": "17日（周三）",
+            "sun": "阴",
+            "temperature": [
+                29,
+                35
+            ],
+            "wind": {
+                "from": "无持续风向",
+                "to": "无持续风向",
+                "level": "<3级"
+            }
+        }
+    ],
+    "alarminfo": [  //预警信息
+        {
+            "title": "雷电黄色预警信号",  //预警项
+            "details": "上海中心气象台2024年07月11日10时30分发布雷电黄色预警[Ⅲ级/较重]：预计未来24小时内本市大部地区将发生雷电活动，可能会造成雷电灾害事故，并可能伴有小时雨强20-30毫米的短时强降水和7-9级的雷雨大风，请注意防范。（预警信息来源：国家预警信息发布中心）",  //预警详情
+            "standard": "6小时内可能发生雷电活动，可能会造成雷电灾害事故。",  //预警标准
+            "manual": "1、政府及相关部门按照职责做好防雷工作；2、密切关注天气，尽量避免户外活动。", //防护指南
+            "typecode": "09",        //类型名称 tips:可通过type和code获取官网相应图片
+            "levelcode": "02",       //级别名称      http://www.weather.com.cn/m2/i/about/alarmpic/0902.gif
+            "signaltype": "雷电",     //类型名称
+            "signallevel": "黄色",    //级别名称
+            "issuetime": "2024-07-11 10:30:00" //预警发布时间
+        },
+        {
+            "title": "暴雨蓝色预警信号",
+            "details": "上海中心气象台2024年07月10日19时38分发布暴雨蓝色预警[Ⅳ级/一般]：受较强的降水云团影响，预计今天夜里到明天中午本市大部地区将出现6小时累积降水量达50毫米以上的降水，请注意防范强降雨可能引发的城市积涝，并做好低洼、易受淹地区排水防涝工作。（预警信息来源：国家预警信息发布中心）",
+            "standard": "12小时内降雨量将达50毫米以上，或者已达50毫米以上且降雨可能持续。",
+            "manual": "1、政府及相关部门按照职责做好防暴雨准备工作；2、学校、幼儿园采取适当措施，保证学生和幼儿安全；3、驾驶人员应当注意道路积水和交通阻塞，确保安全；4、检查城市、农田、鱼塘排水系统，做好排涝准备",
+            "typecode": "02",
+            "levelcode": "01",
+            "signaltype": "暴雨",
+            "signallevel": "蓝色",
+            "issuetime": "2024-07-10 19:38:00"
+        }
+    ]
+}
+
+```
+
 	  
 ## 城市名称 (排名不分先后) 
 

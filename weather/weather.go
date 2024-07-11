@@ -69,10 +69,11 @@ func init() {
 	UPDATE_WEATHERINFO_GAP_MINUTES = 60
 	var e = os.Getenv("REFRESH_RATE")
 	eNum, _ := strconv.ParseInt(e, 10, 64)
-	if eNum > 0 {
-		//这里没有检查范围，为了安全起见应该检查一下范围。
-		//但是我并不想惯着傻逼,就这样吧
-		UPDATE_WEATHERINFO_GAP_MINUTES = eNum
+
+	UPDATE_WEATHERINFO_GAP_MINUTES = eNum
+
+	if eNum < 10 {
+		UPDATE_WEATHERINFO_GAP_MINUTES = 10
 	}
 }
 
@@ -318,13 +319,22 @@ func (c *Weather) ShowCityWeather(province, district, city string) (Resp *Weathe
 	}
 
 	resp, has := c.getWeatherInfoForCache(cityinfo.Code_)
-	if has && !timeCheck(resp.getime_) {
+
+	if has && !timeCheckNew(resp.getime_, float64(UPDATE_WEATHERINFO_GAP_MINUTES)) {
+		resp.ServerTime_ = time.Now().Format("2006-01-02 15:04:05")
+		if !timeCheckNew(resp.curGetTime_, 3) { //最小间隔
+			//查询当前信息
+			GetCurrentWeatherInfo(fmt.Sprintf(CURRENT_INFO_API, cityinfo.Code_, time.Now().Nanosecond()), resp)
+			resp.curGetTime_ = time.Now()
+			c.addWeatherInfoToCache(cityinfo.Code_, resp)
+		}
 		return resp, nil
 	}
 	if has {
 		log.Printf("last update time：%s  %s\n", resp.FullName_, resp.getime_.Format(time.RFC3339))
 	}
 	if newResp, err := c.get7DaysWeatherInfoByCity(cityinfo, !has); nil == err {
+		newResp.ServerTime_ = time.Now().Format("2006-01-02 15:04:05")
 		return newResp, err
 	} else if has {
 		log.Printf("update failed, return the old weather data of [%s]", resp.FullName_)
@@ -340,7 +350,13 @@ func timeCheck(dataTime time.Time) (ok bool) {
 	return dur.Minutes() >= float64(UPDATE_WEATHERINFO_GAP_MINUTES)
 }
 
+func timeCheckNew(dataTime time.Time, gasp float64) (ok bool) {
+	dur := time.Now().Sub(dataTime)
+	return dur.Minutes() >= gasp
+}
+
 func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (Resp *WeatherInfo, err error) {
+
 	req, err := http.NewRequest("GET", WEATHER_SITE+cityinfo.Url_, nil)
 	if err != nil {
 		log.Println(err)
@@ -382,6 +398,10 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 		Url_:      cityinfo.Url_,
 		Spell_:    cityinfo.Spell_,
 	}
+
+	//查询当前信息
+	GetCurrentWeatherInfo(fmt.Sprintf(CURRENT_INFO_API, cityinfo.Code_, time.Now().Nanosecond()), SevenDaysWeatherInfo)
+	SevenDaysWeatherInfo.curGetTime_ = time.Now()
 
 	/*parse 7days weather*/
 	uptime := numfind_re.FindAllString(string(body[day7_start_index[0]-30:day7_start_index[0]]), 2)
@@ -496,10 +516,13 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 	} else {
 		SevenDaysWeatherInfo.getime_ = timeNow
 	}
+
 	//查询是需要获取告警信息
-	location, ok := GetLocationInfoByID(cityinfo.Code_)
+	locations, ok := GetLocationInfoByID(cityinfo.Code_)
 	if ok {
-		GetAlarmDetails(ALARM_DETAILS+location.FileName, SevenDaysWeatherInfo)
+		for _, v := range locations {
+			GetAlarmDetails(ALARM_DETAILS+v.FileName, SevenDaysWeatherInfo)
+		}
 	}
 	c.addWeatherInfoToCache(cityinfo.Code_, SevenDaysWeatherInfo)
 	return SevenDaysWeatherInfo, err

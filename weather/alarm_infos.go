@@ -21,15 +21,15 @@ const (
 
 var (
 	mu         sync.RWMutex
-	alarmInfos map[string]Location
+	alarmInfos map[string][]Location
 )
 
 func init() {
-	alarmInfos = make(map[string]Location)
+	alarmInfos = make(map[string][]Location)
 }
 
 // GetLocationInfoByID foreign
-func GetLocationInfoByID(cityCode string) (details Location, ok bool) {
+func GetLocationInfoByID(cityCode string) (details []Location, ok bool) {
 	mu.Lock()
 	defer mu.Unlock()
 	c, ok := alarmInfos[cityCode] //city : cityCode for example is 101220101
@@ -38,7 +38,7 @@ func GetLocationInfoByID(cityCode string) (details Location, ok bool) {
 		if !ok {
 			p, ok := alarmInfos[cityCode[:len(cityCode)-4]] //province 1012201
 			if !ok {
-				return Location{}, ok
+				return nil, false
 			}
 			return p, ok
 		}
@@ -70,7 +70,7 @@ func CheckAlarmListFromWeatherCom() {
 			mu.Lock()
 			for _, v := range alarmInfoResp.Data {
 				var id string = strings.Split(v[1], "-")[0]
-				alarmInfos[id] = Location{Name: v[0], FileName: v[1], Longitude: v[2], Latitude: v[3], Code: v[4], Code2: v[5]}
+				alarmInfos[id] = append(alarmInfos[id], Location{Name: v[0], FileName: v[1], Longitude: v[2], Latitude: v[3], Code: v[4], Code2: v[5]})
 			}
 			mu.Unlock()
 		}
@@ -118,9 +118,18 @@ func GetAlarmDetails(url string, r *WeatherInfo) {
 
 	fileName, _ := getFileNameFromURL(url)
 	r.Alarm_ = true
+	var ainfo AlarmDetails
 	//r.AlarmInfo_.Title = st1.Head
-	r.AlarmInfo_.Details = st1.IssueContent
-	getAlarmFormINfo(fmt.Sprintf(ALARM_FORM_INFO, fileName, time.Now().Nanosecond()), &r.AlarmInfo_)
+	ainfo.Details = st1.IssueContent
+	ainfo.IssueTime = st1.IssueTime
+	ainfo.TypeCode = st1.TypeCode
+	ainfo.LevelCode = st1.LevelCode
+	ainfo.SignalType = st1.SignalType
+	ainfo.SignalLevel = st1.SignalLevel
+	//ainfo.Color = st1.YJYCEN
+	//ainfo.PicUri = fmt.Sprintf("http://www.weather.com.cn/m2/i/about/alarmpic/%s%s.gif", ainfo.TypeCode, ainfo.LevelCode)
+	getAlarmFormINfo(fmt.Sprintf(ALARM_FORM_INFO, fileName, time.Now().Nanosecond()), &ainfo)
+	r.AlarmInfo_ = append(r.AlarmInfo_, ainfo)
 }
 
 func getAlarmFormINfo(rawURL string, details *AlarmDetails) {
