@@ -26,6 +26,12 @@
     //uri
     dockerhub地址：https://hub.docker.com/r/erfengd/weather
 
+##  新增docker镜像
+    //由于docker hub被禁用，使用国内源经常拉取不到最新的镜像，因此在代码中提供了镜像文件
+    //加载镜像
+    1、 docker load -i WeatherInfos.img
+    //运行服务
+    2、 参考[在容器中使用]
     
 ## 接口  
     获取服务状态    http://ip:port/weather/status
