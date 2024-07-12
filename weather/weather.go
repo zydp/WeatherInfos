@@ -520,6 +520,7 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 	//查询是需要获取告警信息
 	locations, ok := GetLocationInfoByID(cityinfo.Code_)
 	if ok {
+		SevenDaysWeatherInfo.AlarmInfo_ = SevenDaysWeatherInfo.AlarmInfo_[:0]
 		for _, v := range locations {
 			GetAlarmDetails(ALARM_DETAILS+v.FileName, SevenDaysWeatherInfo)
 		}

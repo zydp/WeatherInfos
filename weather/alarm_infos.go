@@ -68,6 +68,7 @@ func CheckAlarmListFromWeatherCom() {
 		err = json.Unmarshal(buf[14:len(buf)-1], &alarmInfoResp)
 		{
 			mu.Lock()
+			alarmInfos = make(map[string][]Location) //每次清空map，以免数据重复
 			for _, v := range alarmInfoResp.Data {
 				var id string = strings.Split(v[1], "-")[0]
 				alarmInfos[id] = append(alarmInfos[id], Location{Name: v[0], FileName: v[1], Longitude: v[2], Latitude: v[3], Code: v[4], Code2: v[5]})
