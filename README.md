@@ -23,8 +23,8 @@
     // If you want to specify a refresh rate
     docker run -idt --name WeatherInfos --restart=always -e -e REFRESH_RATE=30 -p 3244:3244 erfengd/weather
     
-    //uri
-    dockerhub地址：https://hub.docker.com/r/erfengd/weather
+##  dockerhub地址
+    https://hub.docker.com/r/erfengd/weather
 
 ##  新增docker镜像
     //由于docker hub被禁用，使用国内源经常拉取不到最新的镜像，因此在代码中提供了镜像文件
