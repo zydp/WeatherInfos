@@ -19,6 +19,7 @@ const (
 	ALARM_FORM_INFO = "http://www.weather.com.cn/data/alarminfo/%s?_=%d"
 )
 
+// 备用 https://d1.weather.com.cn/dingzhi/101020100.html?_=1721292263961
 var (
 	mu         sync.RWMutex
 	alarmInfos map[string][]Location
@@ -149,9 +150,9 @@ func getAlarmFormINfo(rawURL string, details *AlarmDetails) {
 	buf, _ := ioutil.ReadAll(resp.Body)
 	data := strings.Split(string(buf[14:len(buf)-1]), ",")
 	details.Title = data[1][1 : len(data[1])-1]
-	details.Standard = data[2][1 : len(data[2])-1]
-	details.Manual = strings.Replace(data[3][1:len(data[3])-1], "<br>", "", -1)
-
+	details.Standard = strings.Replace(data[2], "\"", "", -1)
+	details.Manual = strings.Replace(data[3], "<br>", "", -1)
+	details.Manual = strings.Replace(details.Manual, "\"", "", -1)
 }
 
 func getFileNameFromURL(rawURL string) (string, error) {

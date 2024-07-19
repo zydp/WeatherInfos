@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Lofanmi/chinese-calendar-golang/calendar"
 	"github.com/mozillazg/go-pinyin"
 	"io/ioutil"
 	"log"
@@ -54,14 +55,15 @@ var (
 )
 
 type Weather struct {
-	weatherMu, regionMu, entryCacheMu sync.RWMutex
-	nbytes                            int64
-	weatherlru                        *lrucache.Cache
-	entryCache                        *lrucache.Cache
-	nhit, nget                        int64
-	nevict                            int64
-	treeRegion                        *TreeRegionInfo
-	inited                            bool
+	weatherMu, fortyMu, regionMu, entryCacheMu sync.RWMutex
+	nbytes                                     int64
+	weatherlru                                 *lrucache.Cache
+	fortydayslru                               *lrucache.Cache
+	entryCache                                 *lrucache.Cache
+	nhit, nget                                 int64
+	nevict                                     int64
+	treeRegion                                 *TreeRegionInfo
+	inited                                     bool
 }
 
 func init() {
@@ -69,8 +71,9 @@ func init() {
 	UPDATE_WEATHERINFO_GAP_MINUTES = 60
 	var e = os.Getenv("REFRESH_RATE")
 	eNum, _ := strconv.ParseInt(e, 10, 64)
-
-	UPDATE_WEATHERINFO_GAP_MINUTES = eNum
+	if "" != e {
+		UPDATE_WEATHERINFO_GAP_MINUTES = eNum
+	}
 
 	if eNum < 10 {
 		UPDATE_WEATHERINFO_GAP_MINUTES = 10
@@ -79,9 +82,10 @@ func init() {
 
 func New(maxEntries int) *Weather {
 	return &Weather{
-		weatherlru: lrucache.New(maxEntries),
-		entryCache: lrucache.New(0),
-		treeRegion: &TreeRegionInfo{Regions: make(map[string]*TreeRegionInfo)},
+		weatherlru:   lrucache.New(maxEntries),
+		fortydayslru: lrucache.New(10),
+		entryCache:   lrucache.New(0),
+		treeRegion:   &TreeRegionInfo{Regions: make(map[string]*TreeRegionInfo)},
 	}
 }
 
@@ -321,10 +325,14 @@ func (c *Weather) ShowCityWeather(province, district, city string) (Resp *Weathe
 	resp, has := c.getWeatherInfoForCache(cityinfo.Code_)
 
 	if has && !timeCheckNew(resp.getime_, float64(UPDATE_WEATHERINFO_GAP_MINUTES)) {
-		resp.ServerTime_ = time.Now().Format("2006-01-02 15:04:05")
+		var now = time.Now()
+		resp.ServerTime_ = now.Format("2006-01-02 15:04:05")
+		lunar := calendar.ByTimestamp(now.Unix())
+		resp.Lunar_ = fmt.Sprintf("%s年(%s) %s月 %s日 %s时", lunar.Ganzhi.YearGanzhiAlias(), lunar.Lunar.Animal().Alias(), lunar.Ganzhi.MonthGanzhiAlias(), lunar.Ganzhi.DayGanzhiAlias(), lunar.Ganzhi.HourGanzhiAlias())
+
 		if !timeCheckNew(resp.curGetTime_, 3) { //最小间隔
 			//查询当前信息
-			GetCurrentWeatherInfo(fmt.Sprintf(CURRENT_INFO_API, cityinfo.Code_, time.Now().Nanosecond()), resp)
+			GetCurrentWeatherInfo(cityinfo.Code_, fmt.Sprintf(CURRENT_INFO_API, cityinfo.Code_, time.Now().Nanosecond()), resp)
 			resp.curGetTime_ = time.Now()
 			c.addWeatherInfoToCache(cityinfo.Code_, resp)
 		}
@@ -333,8 +341,13 @@ func (c *Weather) ShowCityWeather(province, district, city string) (Resp *Weathe
 	if has {
 		log.Printf("last update time：%s  %s\n", resp.FullName_, resp.getime_.Format(time.RFC3339))
 	}
-	if newResp, err := c.get7DaysWeatherInfoByCity(cityinfo, !has); nil == err {
-		newResp.ServerTime_ = time.Now().Format("2006-01-02 15:04:05")
+	//if newResp, err := c.get7DaysWeatherInfoByCity(cityinfo, !has); nil == err {
+	if newResp, err := c.get7DaysWeatherInfoByCityNew(cityinfo, !has); nil == err {
+		var now = time.Now()
+		newResp.ServerTime_ = now.Format("2006-01-02 15:04:05")
+		lunar := calendar.ByTimestamp(now.Unix())
+		newResp.Lunar_ = fmt.Sprintf("%s年(%s) %s月 %s日 %s时", lunar.Ganzhi.YearGanzhiAlias(), lunar.Lunar.Animal().Alias(), lunar.Ganzhi.MonthGanzhiAlias(), lunar.Ganzhi.DayGanzhiAlias(), lunar.Ganzhi.HourGanzhiAlias())
+		fmt.Println("GanZhi Date:")
 		return newResp, err
 	} else if has {
 		log.Printf("update failed, return the old weather data of [%s]", resp.FullName_)
@@ -400,7 +413,7 @@ func (c *Weather) get7DaysWeatherInfoByCity(cityinfo RegionInfo, isFirst bool) (
 	}
 
 	//查询当前信息
-	GetCurrentWeatherInfo(fmt.Sprintf(CURRENT_INFO_API, cityinfo.Code_, time.Now().Nanosecond()), SevenDaysWeatherInfo)
+	GetCurrentWeatherInfo(cityinfo.Code_, fmt.Sprintf(CURRENT_INFO_API, cityinfo.Code_, time.Now().Nanosecond()), SevenDaysWeatherInfo)
 	SevenDaysWeatherInfo.curGetTime_ = time.Now()
 
 	/*parse 7days weather*/

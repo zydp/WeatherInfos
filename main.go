@@ -64,11 +64,12 @@ func main() {
 	//根据设定的间隔去进行告警列表的获取
 	go weather.CheckAlarmListFromWeatherCom()
 
-	getWeatherHandle()
+	GetWeatherHandle()
 
 	router := http.NewServeMux()
 	router.HandleFunc("/", safe_http_handle(safe_statement))
 	router.HandleFunc("/weather", safe_http_handle(ShowWeather))
+	router.HandleFunc("/weather/forty", safe_http_handle(ShowFortyWeather))
 	router.HandleFunc("/citylist", safe_http_handle(ShowCityList))
 	router.HandleFunc("/weather/status", safe_http_handle(ShowStatus))
 
@@ -94,7 +95,7 @@ func safe_statement(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "<h2 align=\"center\">%s</h2>\n", t)
 }
 
-func getWeatherHandle() (weatherhandle *weather.Weather) {
+func GetWeatherHandle() (weatherhandle *weather.Weather) {
 	once.Do(func() {
 		handle = weather.New(int(weather.DEFAULT_LIMIT_SIZE))
 		if err := handle.InitRegionTree(); err != nil {
@@ -105,7 +106,7 @@ func getWeatherHandle() (weatherhandle *weather.Weather) {
 }
 
 func ShowStatus(w http.ResponseWriter, r *http.Request) {
-	weatherHandle := getWeatherHandle()
+	weatherHandle := GetWeatherHandle()
 	status := weatherHandle.Stats()
 	w.Header().Add("Content-Type", "application/json")
 	strStatus, _ := json.Marshal(status)
@@ -120,7 +121,7 @@ func ShowCityList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	r.ParseForm()
 
-	weatherHandle := getWeatherHandle()
+	weatherHandle := GetWeatherHandle()
 	if prov, ok := r.Form[FIELD_NAME]; ok {
 		resp, _ := weatherHandle.ShowCityList(prov[0])
 		w.Write(resp)
@@ -165,7 +166,7 @@ func ShowWeather(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	weatherHandle := getWeatherHandle()
+	weatherHandle := GetWeatherHandle()
 	var err error
 	var Resp *weather.WeatherInfo
 
@@ -181,6 +182,78 @@ func ShowWeather(w http.ResponseWriter, r *http.Request) {
 		Resp, err = weatherHandle.ShowCityWeather(spellParams[0], spellParams[1], spellParams[1])
 	case 1:
 		Resp, err = weatherHandle.ShowCityWeather(spellParams[0], spellParams[0], spellParams[0])
+	default:
+		errResp(w, http.StatusBadRequest, "parameter error")
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	if nil != err {
+		errResp(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if nil == Resp {
+		errResp(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	jsonStr, err := json.Marshal(Resp)
+	if nil != err {
+		errResp(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	w.Write(jsonStr)
+}
+
+func ShowFortyWeather(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		errResp(w, http.StatusMethodNotAllowed, http.ErrBodyNotAllowed.Error())
+		return
+	}
+	r.ParseForm()
+
+	prov, has := r.Form[FIELD_NAME]
+	//cityCode, hasCode := r.Form[FIELD_NAME_CODE]
+	if !has {
+		errResp(w, http.StatusBadRequest, "parameter error")
+		return
+	}
+
+	strCity := prov[0]
+	params := strings.Split(strCity, STR_SEP)
+	var spellParams []string = make([]string, 0)
+
+	for i := 0; i < len(params); i++ {
+		var spellStrCity = ""
+		for _, v := range pinyin.LazyConvert(params[i], nil) {
+			spellStrCity += v
+		}
+		spellParams = append(spellParams, spellStrCity)
+
+	}
+	paramsLen := len(params)
+
+	for k, v := range spellParams {
+		if "" == v {
+			spellParams[k] = params[k]
+		}
+	}
+
+	weatherHandle := GetWeatherHandle()
+	var err error
+	var Resp []weather.FortyDaysInfo
+
+	if nil == weatherHandle {
+		log.Printf("weatherHandle is nil, please check")
+		errResp(w, http.StatusInternalServerError, "Internal Server Error")
+		return
+	}
+	switch paramsLen {
+	case 3:
+		Resp, err = weatherHandle.GetFortyDaysInfoWeatherCom(spellParams[0], spellParams[1], spellParams[2])
+	case 2:
+		Resp, err = weatherHandle.GetFortyDaysInfoWeatherCom(spellParams[0], spellParams[1], spellParams[1])
+	case 1:
+		Resp, err = weatherHandle.GetFortyDaysInfoWeatherCom(spellParams[0], spellParams[0], spellParams[0])
 	default:
 		errResp(w, http.StatusBadRequest, "parameter error")
 		return
