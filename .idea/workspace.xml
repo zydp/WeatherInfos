@@ -5,7 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="435bb822-fca8-4bfb-b6a1-c6c589d916a2" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WeatherInfos" beforeDir="false" afterPath="$PROJECT_DIR$/WeatherInfos" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WeatherInfos_1.3.img" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/WeatherInfos_1.4.img" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/weather/weathern.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/weathern.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

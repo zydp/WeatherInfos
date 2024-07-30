@@ -16,10 +16,12 @@ const (
 	Seven_DAY_INFO_END   = "</script>"
 	UPDATE_TIME_FOUND    = "<input type=\"hidden\" id=\"update_time\" value=\"(.*?)\""
 	DATE_CONTAINER_START = "<ul class=\"date-container\">"
-	SUN_CONTAINER_START  = "<ul class=\"blue-container sky\">"
 	DATE_CONTAINER_END   = "</ul>"
-	DATE_NUM             = "<p class=\"date\">(.*?)</p>"
-	DATE_NAME            = "<p class=\"date-info\">(.*?)</p>"
+	SUN_CONTAINER_START  = "<ul class=\"blue-container sky\">"
+
+	SUN_CONTAINER_END = "<li class=\"drawTwo-container\">"
+	DATE_NUM          = "<p class=\"date\">(.*?)</p>"
+	DATE_NAME         = "<p class=\"date-info\">(.*?)</p>"
 
 	DATE_WEATHER         = "<p class=\"weather-info\" title=\"(.*?)</p>"
 	DATE_WINDY_LEVEL     = "<p class=\"wind-info\">(.*?)</p>"
@@ -63,8 +65,10 @@ func (c *Weather) get7DaysWeatherInfoByCityNew(cityinfo RegionInfo, isFirst bool
 	day7_end_re := regexp.MustCompile(Seven_DAY_INFO_END)
 	update_time_re := regexp.MustCompile(UPDATE_TIME_FOUND)
 	date_container_start_re := regexp.MustCompile(DATE_CONTAINER_START)
-	sun_constainer_start_re := regexp.MustCompile(SUN_CONTAINER_START)
+
 	date_container_end_re := regexp.MustCompile(DATE_CONTAINER_END)
+	//sun_constainer_start_re := regexp.MustCompile(SUN_CONTAINER_START)
+	//sun_container_end_re := regexp.MustCompile(SUN_CONTAINER_END)
 	live_index_start_re := regexp.MustCompile(LIVE_INDEX_START)
 	live_index_end_re := regexp.MustCompile(LIVE_INDEX_END)
 	//大块中过滤小块
@@ -133,10 +137,10 @@ func (c *Weather) get7DaysWeatherInfoByCityNew(cityinfo RegionInfo, isFirst bool
 	dateName := date_name_re.FindAllStringSubmatch(string(dateStr), -1)
 
 	//天气、风，大概3500字符吧
-	sunStr := body[tmpIndex+1000 : tmpIndex+4500]
-	s = sun_constainer_start_re.FindAllIndex(sunStr, 1)
-	e = date_container_end_re.FindAllIndex(sunStr[s[0][0]:], 1)
-	sunStr = sunStr[s[0][0]:e[0][0]]
+	sunStr := body[tmpIndex+800 : tmpIndex+5000]
+	//s = sun_constainer_start_re.FindAllIndex(sunStr, 1)
+	//e = sun_container_end_re.FindAllIndex(sunStr[s[0][0]:], 1)
+	//windInfos := sunStr[s[0][0]:e[0][1]]
 	weatherStrs := date_weather_re.FindAllStringSubmatch(string(sunStr), -1)
 	weatherWindyLevels := date_windy_level.FindAllStringSubmatch(string(sunStr), -1)
 	weatherWindyDirections := date_windy_driection.FindAllStringSubmatch(string(sunStr), -1)
