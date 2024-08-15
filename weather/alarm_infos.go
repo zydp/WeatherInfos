@@ -128,6 +128,7 @@ func GetAlarmDetails(url string, r *WeatherInfo) {
 	ainfo.LevelCode = st1.LevelCode
 	ainfo.SignalType = st1.SignalType
 	ainfo.SignalLevel = st1.SignalLevel
+	ainfo.Title = strings.Split(st1.Head, "发布")[1]
 	//ainfo.Color = st1.YJYCEN
 	//ainfo.PicUri = fmt.Sprintf("http://www.weather.com.cn/m2/i/about/alarmpic/%s%s.gif", ainfo.TypeCode, ainfo.LevelCode)
 	getAlarmFormINfo(fmt.Sprintf(ALARM_FORM_INFO, fileName, time.Now().Nanosecond()), &ainfo)
@@ -148,8 +149,12 @@ func getAlarmFormINfo(rawURL string, details *AlarmDetails) {
 	}
 	defer resp.Body.Close()
 	buf, _ := ioutil.ReadAll(resp.Body)
+
 	data := strings.Split(string(buf[14:len(buf)-1]), ",")
-	details.Title = data[1][1 : len(data[1])-1]
+	if len(data) > 30 {
+		return
+	}
+	details.Title = strings.Replace(data[1], "\"", "", -1)
 	details.Standard = strings.Replace(data[2], "\"", "", -1)
 	details.Manual = strings.Replace(data[3], "<br>", "", -1)
 	details.Manual = strings.Replace(details.Manual, "\"", "", -1)

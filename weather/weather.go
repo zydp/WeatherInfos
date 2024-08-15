@@ -347,7 +347,6 @@ func (c *Weather) ShowCityWeather(province, district, city string) (Resp *Weathe
 		newResp.ServerTime_ = now.Format("2006-01-02 15:04:05")
 		lunar := calendar.ByTimestamp(now.Unix())
 		newResp.Lunar_ = fmt.Sprintf("%s年(%s) %s月 %s日 %s时", lunar.Ganzhi.YearGanzhiAlias(), lunar.Lunar.Animal().Alias(), lunar.Ganzhi.MonthGanzhiAlias(), lunar.Ganzhi.DayGanzhiAlias(), lunar.Ganzhi.HourGanzhiAlias())
-		fmt.Println("GanZhi Date:")
 		return newResp, err
 	} else if has {
 		log.Printf("update failed, return the old weather data of [%s]", resp.FullName_)

@@ -7,9 +7,8 @@
     <list default="true" id="435bb822-fca8-4bfb-b6a1-c6c589d916a2" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/WeatherInfos" beforeDir="false" afterPath="$PROJECT_DIR$/WeatherInfos" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WeatherInfos_1.3.img" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/WeatherInfos_1.4.img" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/weather/weathern.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/weathern.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/weather/alarm_infos.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/alarm_infos.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/weather/weather.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/weather.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -142,6 +141,42 @@
       </map>
     </environment>
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/weather/alarm_infos.go</url>
+          <line>159</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/weather/alarm_infos.go</url>
+          <line>139</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/weather/weathern.go</url>
+          <line>186</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/weather/alarm_infos.go</url>
+          <line>122</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/weather/weathern.go</url>
+          <line>187</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/weather/alarm_infos.go</url>
+          <line>133</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/main.go">
