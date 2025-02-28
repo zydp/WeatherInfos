@@ -28,7 +28,7 @@ const (
 
 var (
 	iServices = flag.Bool("s", false, "To running as a services")
-	port      = flag.Int("port", 3244, "The TCP port that the server listens on")
+	port      = flag.Int("port", 3245, "The TCP port that the server listens on")
 	address   = flag.String("address", "", "The net address that the server listens")
 	crt       = flag.String("crt", "", "Specify the server credential file")
 	key       = flag.String("key", "", "Specify the server key file")
@@ -212,13 +212,17 @@ func ShowFortyWeather(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
 	prov, has := r.Form[FIELD_NAME]
-	//cityCode, hasCode := r.Form[FIELD_NAME_CODE]
 	if !has {
-		errResp(w, http.StatusBadRequest, "parameter error")
+		errResp(w, http.StatusBadRequest, "parameter error: missing city parameter")
 		return
 	}
 
 	strCity := prov[0]
+	if strCity == "" {
+		errResp(w, http.StatusBadRequest, "parameter error: empty city parameter")
+		return
+	}
+
 	params := strings.Split(strCity, STR_SEP)
 	var spellParams []string = make([]string, 0)
 
@@ -228,7 +232,6 @@ func ShowFortyWeather(w http.ResponseWriter, r *http.Request) {
 			spellStrCity += v
 		}
 		spellParams = append(spellParams, spellStrCity)
-
 	}
 	paramsLen := len(params)
 
@@ -239,14 +242,15 @@ func ShowFortyWeather(w http.ResponseWriter, r *http.Request) {
 	}
 
 	weatherHandle := GetWeatherHandle()
+	if nil == weatherHandle {
+		log.Printf("weatherHandle is nil, please check")
+		errResp(w, http.StatusInternalServerError, "Internal Server Error: weather service unavailable")
+		return
+	}
+
 	var err error
 	var Resp []weather.FortyDaysInfo
 
-	if nil == weatherHandle {
-		log.Printf("weatherHandle is nil, please check")
-		errResp(w, http.StatusInternalServerError, "Internal Server Error")
-		return
-	}
 	switch paramsLen {
 	case 3:
 		Resp, err = weatherHandle.GetFortyDaysInfoWeatherCom(spellParams[0], spellParams[1], spellParams[2])
@@ -255,24 +259,31 @@ func ShowFortyWeather(w http.ResponseWriter, r *http.Request) {
 	case 1:
 		Resp, err = weatherHandle.GetFortyDaysInfoWeatherCom(spellParams[0], spellParams[0], spellParams[0])
 	default:
-		errResp(w, http.StatusBadRequest, "parameter error")
+		errResp(w, http.StatusBadRequest, fmt.Sprintf("parameter error: invalid number of parameters (%d)", paramsLen))
 		return
 	}
 
 	w.Header().Add("Content-Type", "application/json")
-	if nil != err {
-		errResp(w, http.StatusBadRequest, err.Error())
+	
+	if err != nil {
+		log.Printf("Error fetching weather data: %v", err)
+		errResp(w, http.StatusBadRequest, fmt.Sprintf("failed to fetch weather data: %v", err))
 		return
 	}
-	if nil == Resp {
-		errResp(w, http.StatusInternalServerError, "Internal Server Error")
+	
+	if Resp == nil || len(Resp) == 0 {
+		log.Printf("No weather data available for city: %s", strCity)
+		errResp(w, http.StatusNotFound, "no weather data available for the specified city")
 		return
 	}
+
 	jsonStr, err := json.Marshal(Resp)
-	if nil != err {
-		errResp(w, http.StatusInternalServerError, "Internal Server Error")
+	if err != nil {
+		log.Printf("Error marshaling response: %v", err)
+		errResp(w, http.StatusInternalServerError, "Internal Server Error: failed to process weather data")
 		return
 	}
+
 	w.Write(jsonStr)
 }
 

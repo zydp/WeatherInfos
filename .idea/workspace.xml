@@ -6,9 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="435bb822-fca8-4bfb-b6a1-c6c589d916a2" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/WeatherInfos" beforeDir="false" afterPath="$PROJECT_DIR$/WeatherInfos" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/weather/alarm_infos.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/alarm_infos.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/weather/weather.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/weather.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/WeatherInfos" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/weather/forty_days_predict.go" beforeDir="false" afterPath="$PROJECT_DIR$/weather/forty_days_predict.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,7 +86,7 @@
     &quot;configurable.GoLibrariesConfigurable.is.expanded&quot;: &quot;true&quot;,
     &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
     &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;U:/CodeSpace/WeatherInfos&quot;,
+    &quot;last_opened_file_path&quot;: &quot;U:/CodeSpace/pm0502-zhucan-api&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
@@ -156,19 +155,9 @@
           <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/weather/weathern.go</url>
-          <line>186</line>
-          <option name="timeStamp" value="8" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/weather/alarm_infos.go</url>
           <line>122</line>
           <option name="timeStamp" value="9" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/weather/weathern.go</url>
-          <line>187</line>
-          <option name="timeStamp" value="10" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
           <url>file://$PROJECT_DIR$/weather/alarm_infos.go</url>
