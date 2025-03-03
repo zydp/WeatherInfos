@@ -28,7 +28,7 @@ const (
 
 var (
 	iServices = flag.Bool("s", false, "To running as a services")
-	port      = flag.Int("port", 3245, "The TCP port that the server listens on")
+	port      = flag.Int("port", 3244, "The TCP port that the server listens on")
 	address   = flag.String("address", "", "The net address that the server listens")
 	crt       = flag.String("crt", "", "Specify the server credential file")
 	key       = flag.String("key", "", "Specify the server key file")
