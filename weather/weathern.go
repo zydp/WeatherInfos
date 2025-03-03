@@ -164,8 +164,14 @@ func (c *Weather) get7DaysWeatherInfoByCityNew(cityinfo RegionInfo, isFirst bool
 		brief_weather_info.Turn_.Sunset = sunset[i]
 		brief_weather_info.Wind_.From_ = strings.Split(weatherWindyDirections[i+2][1], "\"")[2]
 		brief_weather_info.Wind_.To_ = strings.Split(weatherWindyDirections[i+3][1], "\"")[2]
-		brief_weather_info.Wind_.Level_ = weatherWindyLevels[i][1]
-		//fmt.Println(dayInfo, brief_weather_info)
+		
+		// 处理风级格式
+		windLevel := weatherWindyLevels[i][1]
+		if strings.Contains(windLevel, "<") {
+			windLevel = strings.Replace(windLevel, "<", "小于", -1)
+		}
+		brief_weather_info.Wind_.Level_ = windLevel
+		
 		SevenDaysWeatherInfo.Weather_[i] = brief_weather_info
 	}
 	for i := 0; i < LIVE_INDEX_INFO_COUNT; i++ {
